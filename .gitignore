@@ -5,3 +5,6 @@
 /SplineQt
 
 /Spline/Spline-build-desktop
+
+/ComputerVision/.venv
+/ComputerVision/__pycache__
