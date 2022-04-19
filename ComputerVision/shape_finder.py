@@ -12,6 +12,7 @@ from skimage.measure import regionprops
 from skimage.measure import label as sk_measure_label
 
 from line import Line
+from figure import Figure
 
 
 class ShapeFinder:
@@ -19,7 +20,7 @@ class ShapeFinder:
         pass
 
     def find(self) -> None:
-        image = cv.imread('test\\data\\000_line_src.png', cv.IMREAD_GRAYSCALE)
+        image = cv.imread('test\\data\\003_noise_src.png', cv.IMREAD_GRAYSCALE)
         
         plt.imshow(image, cmap='gray')
         plt.show()
@@ -30,117 +31,148 @@ class ShapeFinder:
         plt.imshow(closed, cmap='gray')
         plt.show()
 
-        closed, coords = self.get_largest_component(closed)
-        plt.imshow(closed, cmap='gray')
-        plt.show()
-
-        h, theta, d = hough_line(closed)
-
         plt.imshow(image, cmap='gray')
 
-        lines = []
+        figures = []
 
-        for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
-            # y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
-            # y1 = (dist - image.shape[1] * np.cos(angle)) / np.sin(angle)
-            # plt.plot((0, image.shape[1]), (y0, y1), '-r')
+        for closed, coords in self.get_all_components(closed):
+            # plt.imshow(closed, cmap='gray')
+            # plt.show()
 
-            x0 = (dist - 0 * np.sin(angle)) / np.cos(angle)
-            x1 = (dist - image.shape[0] * np.sin(angle)) / np.cos(angle)
+            h, theta, d = hough_line(closed)
 
-            plt.plot((x0, x1), (0, image.shape[0]), '-', label=f'angel = {angle}')
+            lines = []
+
+            for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
+                # y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
+                # y1 = (dist - image.shape[1] * np.cos(angle)) / np.sin(angle)
+                # plt.plot((0, image.shape[1]), (y0, y1), '-r')
+
+                x0 = (dist - 0 * np.sin(angle)) / np.cos(angle)
+                x1 = (dist - image.shape[0] * np.sin(angle)) / np.cos(angle)
 
 
-            lines.append([dist, angle])
+                lines.append([dist, angle])
 
-        print(f'Lines num = {len(lines)}')
+            dots = []
+            dots_per_line = []
+            lines_func = []
 
-        dots = []
-        dots_per_line = []
-        lines_func = []
+            for i in range(len(lines)):
+                dots_on_line = []
+                d1, a1 = lines[i][0], lines[i][1]
+                line1 = Line(d1, a1)
 
-        for i in range(len(lines)):
-            dots_on_line = []
-            d1, a1 = lines[i][0], lines[i][1]
-            line1 = Line(d1, a1)
+                lines_func.append(line1)
 
-            lines_func.append(line1)
+                for j in range(len(lines)):
 
-            for j in range(len(lines)):
+                    if i != j:
+                        d2, a2 = lines[j][0], lines[j][1]
 
-                if i != j:
-                    d2, a2 = lines[j][0], lines[j][1]
+                        A = np.array([
+                            [np.cos(a1), np.sin(a1)],
+                            [np.cos(a2), np.sin(a2)]
+                        ])
+                        b = np.array([
+                            [d1],
+                            [d2]
+                        ])
 
-                    A = np.array([
-                        [np.cos(a1), np.sin(a1)],
-                        [np.cos(a2), np.sin(a2)]
-                    ])
-                    b = np.array([
-                        [d1],
-                        [d2]
-                    ])
+                        line2 = Line(d2, a2)
 
-                    line2 = Line(d2, a2)
+                        dt1 = line1.used_pixels(closed)
+                        dt2 = line2.used_pixels(closed)
 
-                    dt1 = line1.used_pixels(closed)
-                    dt2 = line2.used_pixels(closed)
+                        if self.line_intersection(dt1, dt2):
 
-                    if self.line_intersection(dt1, dt2):
+                            if np.linalg.matrix_rank(A) == 2:
+                                x, y = np.linalg.solve(A, b)
+                                x, y = int(np.round(x)), int(np.round(y))
 
-                        if np.linalg.matrix_rank(A) == 2:
-                            x, y = np.linalg.solve(A, b)
-                            x, y = int(np.round(x)), int(np.round(y))
+                                if x > 0 and y > 0 and x < image.shape[1] and y < image.shape[0]:
+                                    dots.append((x, y))
 
-                            if x > 0 and y > 0 and x < image.shape[1] and y < image.shape[0]:
-                                dots.append((x, y))
+                                    dots_on_line.append((x, y))
 
-                                dots_on_line.append((x, y))
+                print(f'Lines = {dots_on_line}')
+                dots_per_line.append(dots_on_line)
 
-            print(f'Lines = {dots_on_line}')
-            dots_per_line.append(dots_on_line)
+            extremes = []
 
-        for line, dots in zip(lines_func, dots_per_line):
-            if len(dots) >= 2:
-                print(f'DOTS: {dots}')
-                print(f'EXTREME: {line.get_extreme_points(dots)}')
-                print('#################################')
+            for line, dots in zip(lines_func, dots_per_line):
+                if len(dots) >= 2:
+                    extremes.append(line.get_extreme_points(dots))
 
-        self.delete_non_edge_dots(dots_per_line)
-        print(f'Deleted: {dots_per_line}')
+            # self.delete_non_edge_dots(dots_per_line)
+            # print(f'Deleted: {dots_per_line}')
 
-        dots = self.dots_on_contour(coords, dots)
+            dots = self.dots_on_contour(coords, dots)
 
-        # plt.plot(coords[:, 1], coords[:, 0], 'og')
-        for dots_on_line in dots_per_line:
-            for dot in dots_on_line:
-                plt.plot((dot[0]), (dot[1]), 'ob', markersize=10)
+            print(f'Extremes: {extremes}')
 
-        # for dot in dots:
-        #     plt.plot((dot[0]), (dot[1]), 'ob', markersize=10)
+            figure = self.find_circle(extremes)
+            
+            if figure is not None:
+                for dot in figure:
+                    plt.plot((dot[0]), (dot[1]), 'ob', markersize=10)
+
+                figures.append(Figure(figures))
 
         plt.title('dots')
-        plt.legend()
 
         plt.xlim((0, image.shape[1]))
         plt.ylim((image.shape[0], 0))
         plt.show()
 
-    def leave_edge_dots(self, dots: np.ndarray) -> np.ndarray:
-        print(f'LINE = {dots}')
+    def find_circle(self, lines: np.ndarray) -> np.ndarray:
+        for i in range(len(lines)):
+            is_figure, figure = self.find_figure(lines, i)
 
-    def delete_non_edge_dots(self, dots_per_line) -> None:
-        dpl = np.array(dots_per_line)
+            if is_figure:
+                return figure
 
-        for dots_on_line in dpl:
-            if len(dots_on_line) == 1:
-                dot = dots_on_line[0]
+        return None
 
-                for dots in dpl:
-                    if dot in dots:
-                        dots.remove(dot)
+    def find_figure(self, lines: np.ndarray, start_ind: int = 0):
+        pivot = lines[start_ind][0]
+        end = lines[start_ind][1]
 
-            if len(dots_on_line) > 2:
-                self.leave_edge_dots(dots_on_line)
+        lines_inds = [start_ind]
+        figure = [pivot]
+
+        next = True
+
+        while next:
+            next = False
+
+            for i, line in enumerate(lines):
+                if i not in lines_inds:
+                    if self.in_line(line, pivot):
+                        pivot = self.other(line, pivot)
+                        
+                        lines_inds.append(i)
+                        figure.append(pivot)
+
+                        next = True
+
+        print(f'Figure = {figure}')
+
+        if figure[-1][0] == end[0] and figure[-1][1] == end[1]:
+            print(f'FIND FIGURE')
+
+        return figure[-1][0] == end[0] and figure[-1][1] == end[1], np.array(figure)
+
+    def in_line(self, line: np.ndarray, point: np.ndarray) -> bool:
+        assert len(point) == 2
+        assert len(line) == 2
+
+        return (point[0] == line[0][0] and point[1] == line[0][1]) or (point[0] == line[1][0] and point[1] == line[1][1])
+
+    def other(self, line: np.ndarray, point: np.ndarray) -> np.ndarray:
+        assert point in line
+
+        return line[0] if point[0] == line[1][0] and point[1] == line[1][1] else line[1]
 
     def delete_noise(self, arr: np.ndarray, noise_rad: int) -> None:
         assert noise_rad > 0
@@ -189,23 +221,49 @@ class ShapeFinder:
 
         return intersection
 
+    def get_all_components(self, mask):
+        labels = sk_measure_label(mask)
+        props = regionprops(labels)
+        areas = np.array([np.array([i, prop.area, prop.coords]) for i, prop in enumerate(props) if prop.area > 10])
+
+        for i in range(len(areas)):
+            yield labels == (areas[i][0] + 1), areas[i][2]
+
     def get_largest_component(self, mask):
-        labels = sk_measure_label(mask) # разбиение маски на компоненты связности
-        props = regionprops(labels) # нахождение свойств каждой области (положение центра, площадь, bbox, интервал интенсивностей и т.д.)
-        areas = np.array([np.array([i, prop.area, prop.coords]) for i, prop in enumerate(props) if prop.area > 10]) # нас интересуют площади компонент связности
+        labels = sk_measure_label(mask)
+        props = regionprops(labels)
+        areas = np.array([np.array([i, prop.area, prop.coords]) for i, prop in enumerate(props) if prop.area > 10], dtype=object)
 
-        # print("Значения площади для каждой компоненты связности: {}".format(areas))
-        largest_comp_id = np.array(areas[:, 1]).argmax() # находим номер компоненты с максимальной площадью
+        largest_comp_id = np.array(areas[:, 1]).argmax()
 
-        ind = 2
+        ind = largest_comp_id
 
-        # print("labels - матрица, заполненная индексами компонент связности со значениями из множества: {}".format(np.unique(labels)))
-        return labels == (areas[ind][0] + 1), areas[ind][2] # области нумеруются с 1, поэтому надо прибавить 1 к индексу
+        return labels == (areas[ind][0] + 1), areas[ind][2]
         
 
 def main():
     shape_finder = ShapeFinder()
-    shape_finder.find()
+    # shape_finder.find()
+
+    print('finded figure')
+
+    fig1 = Figure(np.array([
+        [270, 170],
+        [180, 80],
+        [180, 170]
+    ]))
+    print(fig1.calculate_edges())
+
+    print('normalized figure')
+
+    fig2 = Figure(np.array([
+        [0, 0],
+        [1, 0],
+        [1, 1]
+    ]))
+    print(fig2.calculate_edges())
+
+    fig1.match(fig2)
 
     return
 
