@@ -1,4 +1,3 @@
-from cProfile import label
 import cv2 as cv
 import argparse
 import numpy as np
@@ -13,44 +12,40 @@ from skimage.measure import label as sk_measure_label
 
 from line import Line
 from figure import Figure
+from matching_algorithm import MatchingAlgorithm
+from input_reader import InputReader
 
 
 class ShapeFinder:
     def __init__(self) -> None:
         pass
 
-    def find(self) -> None:
-        image = cv.imread('test\\data\\003_noise_src.png', cv.IMREAD_GRAYSCALE)
+    def find(self, image_name: str) -> None:
+        image = cv.imread(image_name, cv.IMREAD_GRAYSCALE)
         
-        plt.imshow(image, cmap='gray')
-        plt.show()
-
-        closed = image
+        # plt.imshow(image, cmap='gray')
+        # plt.show()
 
         closed = binary_closing(image)
-        plt.imshow(closed, cmap='gray')
-        plt.show()
+        # plt.imshow(closed, cmap='gray')
+        # plt.show()
 
-        plt.imshow(image, cmap='gray')
+        # plt.imshow(image, cmap='gray')
 
         figures = []
 
         for closed, coords in self.get_all_components(closed):
-            # plt.imshow(closed, cmap='gray')
-            # plt.show()
+            is_need, edged = self.need_canny(closed)
+
+            closed = edged if is_need else closed
 
             h, theta, d = hough_line(closed)
 
             lines = []
 
             for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
-                # y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)
-                # y1 = (dist - image.shape[1] * np.cos(angle)) / np.sin(angle)
-                # plt.plot((0, image.shape[1]), (y0, y1), '-r')
-
                 x0 = (dist - 0 * np.sin(angle)) / np.cos(angle)
                 x1 = (dist - image.shape[0] * np.sin(angle)) / np.cos(angle)
-
 
                 lines.append([dist, angle])
 
@@ -95,7 +90,8 @@ class ShapeFinder:
 
                                     dots_on_line.append((x, y))
 
-                print(f'Lines = {dots_on_line}')
+                                    # print(f'x, y = {(x, y)}')
+
                 dots_per_line.append(dots_on_line)
 
             extremes = []
@@ -104,26 +100,26 @@ class ShapeFinder:
                 if len(dots) >= 2:
                     extremes.append(line.get_extreme_points(dots))
 
-            # self.delete_non_edge_dots(dots_per_line)
-            # print(f'Deleted: {dots_per_line}')
-
             dots = self.dots_on_contour(coords, dots)
 
-            print(f'Extremes: {extremes}')
+            # print(f'Extremes: {extremes}')
 
             figure = self.find_circle(extremes)
             
             if figure is not None:
                 for dot in figure:
-                    plt.plot((dot[0]), (dot[1]), 'ob', markersize=10)
+                    pass
+                    # plt.plot((dot[0]), (dot[1]), 'ob', markersize=10)
 
-                figures.append(Figure(figures))
+                figures.append(Figure(figure))
 
-        plt.title('dots')
+        # plt.title('dots')
 
-        plt.xlim((0, image.shape[1]))
-        plt.ylim((image.shape[0], 0))
-        plt.show()
+        # plt.xlim((0, image.shape[1]))
+        # plt.ylim((image.shape[0], 0))
+        # plt.show()
+
+        return figures
 
     def find_circle(self, lines: np.ndarray) -> np.ndarray:
         for i in range(len(lines)):
@@ -156,10 +152,10 @@ class ShapeFinder:
 
                         next = True
 
-        print(f'Figure = {figure}')
+        # print(f'Figure = {figure}')
 
-        if figure[-1][0] == end[0] and figure[-1][1] == end[1]:
-            print(f'FIND FIGURE')
+        # if figure[-1][0] == end[0] and figure[-1][1] == end[1]:
+        #     print(f'FIND FIGURE')
 
         return figure[-1][0] == end[0] and figure[-1][1] == end[1], np.array(figure)
 
@@ -197,8 +193,8 @@ class ShapeFinder:
     def line_intersection(self, dots1, dots2) -> bool:
         for dot1 in dots1:
             for dot2 in dots2:
-                if dot1[0] in self.neighborhood(dot2[0], 2):
-                    if dot1[1] in self.neighborhood(dot2[1], 2):
+                if dot1[0] in self.neighborhood(dot2[0], 5):
+                    if dot1[1] in self.neighborhood(dot2[1], 5):
                         # print(f'Dots = {dot1}, {dot2}')
                         return True
 
@@ -221,7 +217,7 @@ class ShapeFinder:
 
         return intersection
 
-    def get_all_components(self, mask):
+    def get_all_components(self, mask: np.ndarray):
         labels = sk_measure_label(mask)
         props = regionprops(labels)
         areas = np.array([np.array([i, prop.area, prop.coords]) for i, prop in enumerate(props) if prop.area > 10])
@@ -229,7 +225,7 @@ class ShapeFinder:
         for i in range(len(areas)):
             yield labels == (areas[i][0] + 1), areas[i][2]
 
-    def get_largest_component(self, mask):
+    def get_largest_component(self, mask: np.ndarray):
         labels = sk_measure_label(mask)
         props = regionprops(labels)
         areas = np.array([np.array([i, prop.area, prop.coords]) for i, prop in enumerate(props) if prop.area > 10], dtype=object)
@@ -239,31 +235,60 @@ class ShapeFinder:
         ind = largest_comp_id
 
         return labels == (areas[ind][0] + 1), areas[ind][2]
-        
+
+    def need_canny(self, image: np.ndarray) -> bool:
+        edged_image = canny(image, sigma=1.5, low_threshold=0.1)
+
+        return np.sum(edged_image) < np.sum(image), edged_image
+
+
+def parse_args():
+    args_parser = argparse.ArgumentParser()
+    args_parser.add_argument('-s', help='input file')
+    args_parser.add_argument('-i', help='input image')
+
+    args = args_parser.parse_args()
+
+    assert args.s is not None
+    assert args.i is not None
+
+    return args.s, args.i
+
 
 def main():
+    input_file, image = parse_args()
+
+    input_reader = InputReader(input_file)
+    input_figures = input_reader.read()
+
     shape_finder = ShapeFinder()
-    # shape_finder.find()
+    figures = shape_finder.find(image)
 
-    print('finded figure')
+    match = MatchingAlgorithm(10)
 
-    fig1 = Figure(np.array([
-        [270, 170],
-        [180, 80],
-        [180, 170]
-    ]))
-    print(fig1.calculate_edges())
+    answer = []
 
-    print('normalized figure')
+    for figure in figures:
+        founded = False
 
-    fig2 = Figure(np.array([
-        [0, 0],
-        [1, 0],
-        [1, 1]
-    ]))
-    print(fig2.calculate_edges())
+        for i, input_figure in enumerate(input_figures):
+            res, shift_x, shift_y, scale, rotate = match.match(figure.get_vertices(), input_figure.get_vertices())
 
-    fig1.match(fig2)
+            if res == True:
+                answer.append([i, shift_x, shift_y, scale, rotate])
+                founded = True
+
+            if founded:
+                break
+
+
+    print(len(answer))
+
+    for line in answer:
+        for elem in line:
+            print(elem, end=' ')
+
+        print()
 
     return
 
