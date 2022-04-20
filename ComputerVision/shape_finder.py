@@ -23,14 +23,7 @@ class ShapeFinder:
     def find(self, image_name: str) -> None:
         image = cv.imread(image_name, cv.IMREAD_GRAYSCALE)
         
-        # plt.imshow(image, cmap='gray')
-        # plt.show()
-
         closed = binary_closing(image)
-        # plt.imshow(closed, cmap='gray')
-        # plt.show()
-
-        # plt.imshow(image, cmap='gray')
 
         figures = []
 
@@ -90,7 +83,6 @@ class ShapeFinder:
 
                                     dots_on_line.append((x, y))
 
-                                    # print(f'x, y = {(x, y)}')
 
                 dots_per_line.append(dots_on_line)
 
@@ -102,22 +94,13 @@ class ShapeFinder:
 
             dots = self.dots_on_contour(coords, dots)
 
-            # print(f'Extremes: {extremes}')
-
             figure = self.find_circle(extremes)
             
             if figure is not None:
                 for dot in figure:
                     pass
-                    # plt.plot((dot[0]), (dot[1]), 'ob', markersize=10)
 
                 figures.append(Figure(figure))
-
-        # plt.title('dots')
-
-        # plt.xlim((0, image.shape[1]))
-        # plt.ylim((image.shape[0], 0))
-        # plt.show()
 
         return figures
 
@@ -151,11 +134,6 @@ class ShapeFinder:
                         figure.append(pivot)
 
                         next = True
-
-        # print(f'Figure = {figure}')
-
-        # if figure[-1][0] == end[0] and figure[-1][1] == end[1]:
-        #     print(f'FIND FIGURE')
 
         return figure[-1][0] == end[0] and figure[-1][1] == end[1], np.array(figure)
 
@@ -195,7 +173,6 @@ class ShapeFinder:
             for dot2 in dots2:
                 if dot1[0] in self.neighborhood(dot2[0], 5):
                     if dot1[1] in self.neighborhood(dot2[1], 5):
-                        # print(f'Dots = {dot1}, {dot2}')
                         return True
 
         return False
@@ -212,8 +189,6 @@ class ShapeFinder:
             for coord in coords:
                 if dot[0] in [coord[1] - 1, coord[1], coord[1] + 1] and dot[1] in [coord[0] - 1, coord[0], coord[0] + 1]:
                     intersection.append(dot)
-
-        # print(f'Intersection = {intersection}')
 
         return intersection
 
