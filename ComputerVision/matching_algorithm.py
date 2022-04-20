@@ -2,13 +2,12 @@ import math
 
 
 class MatchingAlgorithm:
-    def __init__(self, eps_coeff=50) -> None:
+    def __init__(self, eps_coeff=10) -> None:
         self.eps_coeff = eps_coeff
-        pass
 
-    def match(self, origin_poly: [], searched_poly: []):
+    def match(self, origin_poly, searched_poly):
         if len(origin_poly) != len(searched_poly):
-            return False, 0.0, 0.0, 0.0, 0.0
+            return False, 0, 0, 0, 0
 
         for poly in [searched_poly, list(reversed(searched_poly))]:
 
@@ -16,7 +15,7 @@ class MatchingAlgorithm:
             _, s_longest_sides = self._find_longest_sides(poly)
 
             if len(f_longest_sides) != len(s_longest_sides):
-                return False, 0.0, 0.0, 0.0, 0.0
+                return False, 0.0, 0, 0, 0
 
             for f_longest_side in f_longest_sides:
                 for s_longest_side in s_longest_sides:
@@ -50,27 +49,20 @@ class MatchingAlgorithm:
                     temp_poly1 = self._rotate_by_angle(temp_poly, index, angle)
                     temp_poly2 = self._rotate_by_angle(temp_poly, index, -angle)
 
-                    miss_flag = False
+                    for t_poly, t_angle in zip([temp_poly1, temp_poly2], [angle, -angle]):
+                        miss_flag = False
 
-                    for j in range(len(temp_poly1)):
-                        if self._dist(temp_poly1[j], origin_poly[j]) > eps:
-                            miss_flag = True
-                            break
-                    if not miss_flag:
-                        return True, answer_dist[0], answer_dist[1], coeff, -math.degrees(angle)
+                        for j in range(len(t_poly)):
+                            if self._dist(t_poly[j], origin_poly[j]) > eps:
+                                miss_flag = True
+                                break
+                        if not miss_flag:
+                            return True, self._int_r(answer_dist[0]), self._int_r(answer_dist[1]), self._int_r(coeff), \
+                                   self._int_r(math.degrees(t_angle))
 
-                    miss_flag = False
+        return False, 0, 0, 0, 0
 
-                    for j in range(len(temp_poly2)):
-                        if self._dist(temp_poly2[j], origin_poly[j]) > eps:
-                            miss_flag = True
-                            break
-                    if not miss_flag:
-                        return True, answer_dist[0], answer_dist[1], coeff, -math.degrees(-angle)
-
-        return False, 0.0, 0.0, 0.0, 0.0
-
-    def _find_longest_sides(self, poly: []):
+    def _find_longest_sides(self, poly):
         max_dist = 0.0
         eps = -math.inf
         indexes = []
@@ -94,11 +86,16 @@ class MatchingAlgorithm:
         return eps, indexes
 
     @staticmethod
-    def _dist(f_point: [], s_point: []) -> float:
+    def _dist(f_point, s_point) -> float:
         return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(f_point, s_point)))
 
     @staticmethod
-    def _recalc_indexes(poly: [], index) -> []:
+    def _int_r(num):
+        num = int(num + (0.5 if num > 0 else -0.5))
+        return num
+
+    @staticmethod
+    def _recalc_indexes(poly, index) -> []:
         new_poly = []
         for i in range(index, len(poly)):
             new_poly.append(poly[i])
@@ -107,7 +104,7 @@ class MatchingAlgorithm:
         return new_poly
 
     @staticmethod
-    def _resize_by_point(poly: [], index, coeff) -> []:
+    def _resize_by_point(poly, index, coeff) -> []:
         resized_poly = []
         for i in range(len(poly)):
             if i == index:
@@ -122,7 +119,7 @@ class MatchingAlgorithm:
         return resized_poly
 
     @staticmethod
-    def _rotate(origin: [], point: [], angle) -> []:
+    def _rotate(origin, point, angle) -> []:
         ox, oy = origin
         px, py = point
 
@@ -138,7 +135,7 @@ class MatchingAlgorithm:
         return math.acos(sc / ma / mb)
 
     @staticmethod
-    def _rotate_by_angle(poly: [], index, angle) -> []:
+    def _rotate_by_angle(poly, index, angle) -> []:
         rotated_poly = []
         for i in range(len(poly)):
             if i == index:
