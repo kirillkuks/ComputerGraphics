@@ -171,8 +171,8 @@ class ShapeFinder:
     def line_intersection(self, dots1, dots2) -> bool:
         for dot1 in dots1:
             for dot2 in dots2:
-                if dot1[0] in self.neighborhood(dot2[0], 5):
-                    if dot1[1] in self.neighborhood(dot2[1], 5):
+                if dot1[0] in self.neighborhood(dot2[0], 2):
+                    if dot1[1] in self.neighborhood(dot2[1], 2):
                         return True
 
         return False
