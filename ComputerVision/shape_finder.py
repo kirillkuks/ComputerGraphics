@@ -260,10 +260,7 @@ def main():
     print(len(answer))
 
     for line in answer:
-        for elem in line:
-            print(elem, end=' ')
-
-        print()
+        print(f'{line[0]}, {line[1]}, {line[2]}, {line[3]}, {line[4]}')
 
     return
 
