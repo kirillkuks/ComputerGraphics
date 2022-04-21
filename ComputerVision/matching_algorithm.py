@@ -5,43 +5,43 @@ class MatchingAlgorithm:
     def __init__(self, eps_coeff=10) -> None:
         self.eps_coeff = eps_coeff
 
-    def match(self, origin_poly, searched_poly):
+    '''def match(self, origin_poly, searched_poly):
         if len(origin_poly) != len(searched_poly):
             return False, 0, 0, 0, 0
 
-        for poly in [searched_poly, list(reversed(searched_poly))]:
+        for poly in [origin_poly, list(reversed(origin_poly))]:
 
-            eps, f_longest_sides = self._find_longest_sides(origin_poly)
-            _, s_longest_sides = self._find_longest_sides(poly)
+            eps, f_longest_sides = self._find_longest_sides(poly)
+            _, s_longest_sides = self._find_longest_sides(searched_poly)
 
             if len(f_longest_sides) != len(s_longest_sides):
-                return False, 0.0, 0, 0, 0
+                return False, 0, 0, 0, 0
 
             for f_longest_side in f_longest_sides:
                 for s_longest_side in s_longest_sides:
-                    coeff = self._dist(origin_poly[f_longest_side[0]], origin_poly[f_longest_side[1]]) / \
-                            self._dist(poly[s_longest_side[0]], poly[s_longest_side[1]])
+                    coeff = self._dist(poly[f_longest_side[0]], poly[f_longest_side[1]]) / \
+                            self._dist(searched_poly[s_longest_side[0]], searched_poly[s_longest_side[1]])
 
                     if s_longest_side[0] != f_longest_side[0]:
                         shift = s_longest_side[0] - f_longest_side[0]
                         if shift < 0:
-                            shift = len(origin_poly) + shift
-                        elif shift >= len(origin_poly):
-                            shift = shift - len(origin_poly)
-                        temp_poly = self._recalc_indexes(poly, shift)
+                            shift = len(poly) + shift
+                        elif shift >= len(poly):
+                            shift = shift - len(poly)
+                        temp_poly = self._recalc_indexes(searched_poly, shift)
                     else:
-                        temp_poly = poly
+                        temp_poly = searched_poly
 
                     index = f_longest_side[0]
 
-                    answer_dist = [x - y for x, y in zip(origin_poly[0], temp_poly[0])]
-                    dist = [x - y for x, y in zip(origin_poly[index], temp_poly[index])]
+                    answer_dist = [x - y for x, y in zip(poly[0], temp_poly[0])]
+                    dist = [x - y for x, y in zip(poly[index], temp_poly[index])]
 
                     temp_poly = list(map(lambda point: [point[0] + dist[0], point[1] + dist[1]], temp_poly))
 
                     temp_poly = self._resize_by_point(temp_poly, index, coeff)
 
-                    f_vector = [x - y for x, y in zip(origin_poly[f_longest_side[1]], origin_poly[index])]
+                    f_vector = [x - y for x, y in zip(poly[f_longest_side[1]], poly[index])]
                     s_vector = [x - y for x, y in zip(temp_poly[f_longest_side[1]], temp_poly[index])]
 
                     angle = self._find_angle(s_vector, f_vector)
@@ -53,7 +53,66 @@ class MatchingAlgorithm:
                         miss_flag = False
 
                         for j in range(len(t_poly)):
-                            if self._dist(t_poly[j], origin_poly[j]) > eps:
+                            if self._dist(t_poly[j], poly[j]) > eps:
+                                miss_flag = True
+                                break
+                        if not miss_flag:
+                            return True, self._int_r(answer_dist[0]), self._int_r(answer_dist[1]), self._int_r(coeff), \
+                                   self._int_r(math.degrees(t_angle))
+
+        return False, 0, 0, 0, 0'''
+
+    def match(self, origin_poly, searched_poly):
+        if len(origin_poly) != len(searched_poly):
+            return False, 0, 0, 0, 0
+
+        for sp in [searched_poly, list(reversed(searched_poly))]:
+
+            eps, sp_longest_sides = self._find_longest_sides(sp)
+            _, op_longest_sides = self._find_longest_sides(origin_poly)
+
+            if len(sp_longest_sides) != len(op_longest_sides):
+                return False, 0, 0, 0, 0
+
+            for sp_longest_side in sp_longest_sides:
+                for op_longest_side in op_longest_sides:
+                    coeff = self._dist(sp[sp_longest_side[0]], sp[sp_longest_side[1]]) / \
+                            self._dist(origin_poly[op_longest_side[0]], origin_poly[op_longest_side[1]])
+
+                    if sp_longest_side[0] != op_longest_side[0]:
+                        shift = sp_longest_side[0] - op_longest_side[0]
+                        if shift < 0:
+                            shift = len(sp) + shift
+                        elif shift >= len(sp):
+                            shift = shift - len(sp)
+                        tmp_sp = self._recalc_indexes(sp, shift)
+                    else:
+                        tmp_sp = sp
+
+                    index = op_longest_side[0]
+
+                    tmp_op = origin_poly
+
+                    answer_dist = [x - y for x, y in zip(tmp_sp[0], tmp_op[0])]
+                    dist = [x - y for x, y in zip(tmp_sp[index], tmp_op[index])]
+
+                    tmp_op = list(map(lambda point: [point[0] + dist[0], point[1] + dist[1]], tmp_op))
+
+                    tmp_op = self._resize_by_point(tmp_op, index, coeff)
+
+                    f_vector = [x - y for x, y in zip(tmp_sp[op_longest_side[1]], tmp_sp[index])]
+                    s_vector = [x - y for x, y in zip(tmp_op[op_longest_side[1]], tmp_op[index])]
+
+                    angle = self._find_angle(s_vector, f_vector)
+
+                    tmp_op_poly1 = self._rotate_by_angle(tmp_op, index, angle)
+                    tmp_op_poly2 = self._rotate_by_angle(tmp_op, index, -angle)
+
+                    for poly, t_angle in zip([tmp_op_poly1, tmp_op_poly2], [angle, -angle]):
+                        miss_flag = False
+
+                        for j in range(len(poly)):
+                            if self._dist(poly[j], tmp_sp[j]) > eps:
                                 miss_flag = True
                                 break
                         if not miss_flag:
