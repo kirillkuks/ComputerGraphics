@@ -5,63 +5,6 @@ class MatchingAlgorithm:
     def __init__(self, eps_coeff=10) -> None:
         self.eps_coeff = eps_coeff
 
-    '''def match(self, origin_poly, searched_poly):
-        if len(origin_poly) != len(searched_poly):
-            return False, 0, 0, 0, 0
-
-        for poly in [origin_poly, list(reversed(origin_poly))]:
-
-            eps, f_longest_sides = self._find_longest_sides(poly)
-            _, s_longest_sides = self._find_longest_sides(searched_poly)
-
-            if len(f_longest_sides) != len(s_longest_sides):
-                return False, 0, 0, 0, 0
-
-            for f_longest_side in f_longest_sides:
-                for s_longest_side in s_longest_sides:
-                    coeff = self._dist(poly[f_longest_side[0]], poly[f_longest_side[1]]) / \
-                            self._dist(searched_poly[s_longest_side[0]], searched_poly[s_longest_side[1]])
-
-                    if s_longest_side[0] != f_longest_side[0]:
-                        shift = s_longest_side[0] - f_longest_side[0]
-                        if shift < 0:
-                            shift = len(poly) + shift
-                        elif shift >= len(poly):
-                            shift = shift - len(poly)
-                        temp_poly = self._recalc_indexes(searched_poly, shift)
-                    else:
-                        temp_poly = searched_poly
-
-                    index = f_longest_side[0]
-
-                    answer_dist = [x - y for x, y in zip(poly[0], temp_poly[0])]
-                    dist = [x - y for x, y in zip(poly[index], temp_poly[index])]
-
-                    temp_poly = list(map(lambda point: [point[0] + dist[0], point[1] + dist[1]], temp_poly))
-
-                    temp_poly = self._resize_by_point(temp_poly, index, coeff)
-
-                    f_vector = [x - y for x, y in zip(poly[f_longest_side[1]], poly[index])]
-                    s_vector = [x - y for x, y in zip(temp_poly[f_longest_side[1]], temp_poly[index])]
-
-                    angle = self._find_angle(s_vector, f_vector)
-
-                    temp_poly1 = self._rotate_by_angle(temp_poly, index, angle)
-                    temp_poly2 = self._rotate_by_angle(temp_poly, index, -angle)
-
-                    for t_poly, t_angle in zip([temp_poly1, temp_poly2], [angle, -angle]):
-                        miss_flag = False
-
-                        for j in range(len(t_poly)):
-                            if self._dist(t_poly[j], poly[j]) > eps:
-                                miss_flag = True
-                                break
-                        if not miss_flag:
-                            return True, self._int_r(answer_dist[0]), self._int_r(answer_dist[1]), self._int_r(coeff), \
-                                   self._int_r(math.degrees(t_angle))
-
-        return False, 0, 0, 0, 0'''
-
     def match(self, origin_poly, searched_poly):
         if len(origin_poly) != len(searched_poly):
             return False, 0, 0, 0, 0
