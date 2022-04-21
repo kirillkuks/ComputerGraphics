@@ -8,3 +8,4 @@
 
 /ComputerVision/.venv
 /ComputerVision/__pycache__
+/ComputerVision/test/__pycache__

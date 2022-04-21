@@ -195,7 +195,7 @@ class ShapeFinder:
     def get_all_components(self, mask: np.ndarray):
         labels = sk_measure_label(mask)
         props = regionprops(labels)
-        areas = np.array([np.array([i, prop.area, prop.coords]) for i, prop in enumerate(props) if prop.area > 10])
+        areas = np.array([np.array([i, prop.area, prop.coords]) for i, prop in enumerate(props) if prop.area > 10], dtype=object)
 
         for i in range(len(areas)):
             yield labels == (areas[i][0] + 1), areas[i][2]
@@ -231,6 +231,8 @@ def parse_args():
 
 
 def main():
+    np.warnings.filterwarnings('ignore', category=np.VisibleDeprecationWarning)
+
     input_file, image = parse_args()
 
     input_reader = InputReader(input_file)
@@ -247,7 +249,7 @@ def main():
         founded = False
 
         for i, input_figure in enumerate(input_figures):
-            res, shift_x, shift_y, scale, rotate = match.match(figure.get_vertices(), input_figure.get_vertices())
+            res, shift_x, shift_y, scale, rotate = match.match(input_figure.get_vertices(), figure.get_vertices())
 
             if res == True:
                 answer.append([i, shift_x, shift_y, scale, rotate])
