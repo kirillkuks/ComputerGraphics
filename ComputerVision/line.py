@@ -86,4 +86,3 @@ class Line:
                 i = k
             else:
                 i += 1    
-

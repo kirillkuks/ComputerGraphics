@@ -3,7 +3,7 @@ import cv2
 
 from create_data import *
 
-EXECUTABLE = 'C:/Users/CHUKDANIIL/Documents/algsingraphics/LabCV/labs/2021/Krupkina/Computer_vision_challenge-cv_shape_finder/shape_finder.py'
+EXECUTABLE = 'D:/Kuksenko/ComputerGraphics/ComputerVision/shape_finder.py'
 BASE_DIR = 'data'
 
 VERBOSE = True

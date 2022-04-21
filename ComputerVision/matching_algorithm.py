@@ -8,7 +8,7 @@ class MatchingAlgorithm:
     def match(self, origin_poly, searched_poly):
         if len(origin_poly) != len(searched_poly):
             return False, 0, 0, 0, 0
-
+          
         for sp in [searched_poly, list(reversed(searched_poly))]:
 
             eps, sp_longest_sides = self._find_longest_sides(sp)
@@ -97,7 +97,7 @@ class MatchingAlgorithm:
         return num
 
     @staticmethod
-    def _recalc_indexes(poly, index) -> []:
+    def _recalc_indexes(poly, index) -> list:
         new_poly = []
         for i in range(index, len(poly)):
             new_poly.append(poly[i])
@@ -106,7 +106,7 @@ class MatchingAlgorithm:
         return new_poly
 
     @staticmethod
-    def _resize_by_point(poly, index, coeff) -> []:
+    def _resize_by_point(poly, index, coeff) -> list:
         resized_poly = []
         for i in range(len(poly)):
             if i == index:
@@ -121,7 +121,7 @@ class MatchingAlgorithm:
         return resized_poly
 
     @staticmethod
-    def _rotate(origin, point, angle) -> []:
+    def _rotate(origin, point, angle) -> list:
         ox, oy = origin
         px, py = point
 
@@ -137,7 +137,7 @@ class MatchingAlgorithm:
         return math.acos(sc / ma / mb)
 
     @staticmethod
-    def _rotate_by_angle(poly, index, angle) -> []:
+    def _rotate_by_angle(poly, index, angle) -> list:
         rotated_poly = []
         for i in range(len(poly)):
             if i == index:
