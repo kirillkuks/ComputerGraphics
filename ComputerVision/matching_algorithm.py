@@ -8,52 +8,54 @@ class MatchingAlgorithm:
     def match(self, origin_poly, searched_poly):
         if len(origin_poly) != len(searched_poly):
             return False, 0, 0, 0, 0
+          
+        for sp in [searched_poly, list(reversed(searched_poly))]:
 
-        for poly in [searched_poly, list(reversed(searched_poly))]:
+            eps, sp_longest_sides = self._find_longest_sides(sp)
+            _, op_longest_sides = self._find_longest_sides(origin_poly)
 
-            eps, f_longest_sides = self._find_longest_sides(origin_poly)
-            _, s_longest_sides = self._find_longest_sides(poly)
+            if len(sp_longest_sides) != len(op_longest_sides):
+                return False, 0, 0, 0, 0
 
-            if len(f_longest_sides) != len(s_longest_sides):
-                return False, 0.0, 0, 0, 0
+            for sp_longest_side in sp_longest_sides:
+                for op_longest_side in op_longest_sides:
+                    coeff = self._dist(sp[sp_longest_side[0]], sp[sp_longest_side[1]]) / \
+                            self._dist(origin_poly[op_longest_side[0]], origin_poly[op_longest_side[1]])
 
-            for f_longest_side in f_longest_sides:
-                for s_longest_side in s_longest_sides:
-                    coeff = self._dist(origin_poly[f_longest_side[0]], origin_poly[f_longest_side[1]]) / \
-                            self._dist(poly[s_longest_side[0]], poly[s_longest_side[1]])
-
-                    if s_longest_side[0] != f_longest_side[0]:
-                        shift = s_longest_side[0] - f_longest_side[0]
+                    if sp_longest_side[0] != op_longest_side[0]:
+                        shift = sp_longest_side[0] - op_longest_side[0]
                         if shift < 0:
-                            shift = len(origin_poly) + shift
-                        elif shift >= len(origin_poly):
-                            shift = shift - len(origin_poly)
-                        temp_poly = self._recalc_indexes(poly, shift)
+                            shift = len(sp) + shift
+                        elif shift >= len(sp):
+                            shift = shift - len(sp)
+                        tmp_sp = self._recalc_indexes(sp, shift)
                     else:
-                        temp_poly = poly
+                        tmp_sp = sp
 
-                    index = f_longest_side[0]
+                    index = op_longest_side[0]
 
-                    answer_dist = [x - y for x, y in zip(origin_poly[0], temp_poly[0])]
-                    dist = [x - y for x, y in zip(origin_poly[index], temp_poly[index])]
+                    tmp_op = origin_poly
 
-                    temp_poly = list(map(lambda point: [point[0] + dist[0], point[1] + dist[1]], temp_poly))
+                    answer_dist = [x - y for x, y in zip(tmp_sp[0], tmp_op[0])]
+                    dist = [x - y for x, y in zip(tmp_sp[index], tmp_op[index])]
 
-                    temp_poly = self._resize_by_point(temp_poly, index, coeff)
+                    tmp_op = list(map(lambda point: [point[0] + dist[0], point[1] + dist[1]], tmp_op))
 
-                    f_vector = [x - y for x, y in zip(origin_poly[f_longest_side[1]], origin_poly[index])]
-                    s_vector = [x - y for x, y in zip(temp_poly[f_longest_side[1]], temp_poly[index])]
+                    tmp_op = self._resize_by_point(tmp_op, index, coeff)
+
+                    f_vector = [x - y for x, y in zip(tmp_sp[op_longest_side[1]], tmp_sp[index])]
+                    s_vector = [x - y for x, y in zip(tmp_op[op_longest_side[1]], tmp_op[index])]
 
                     angle = self._find_angle(s_vector, f_vector)
 
-                    temp_poly1 = self._rotate_by_angle(temp_poly, index, angle)
-                    temp_poly2 = self._rotate_by_angle(temp_poly, index, -angle)
+                    tmp_op_poly1 = self._rotate_by_angle(tmp_op, index, angle)
+                    tmp_op_poly2 = self._rotate_by_angle(tmp_op, index, -angle)
 
-                    for t_poly, t_angle in zip([temp_poly1, temp_poly2], [angle, -angle]):
+                    for poly, t_angle in zip([tmp_op_poly1, tmp_op_poly2], [angle, -angle]):
                         miss_flag = False
 
-                        for j in range(len(t_poly)):
-                            if self._dist(t_poly[j], origin_poly[j]) > eps:
+                        for j in range(len(poly)):
+                            if self._dist(poly[j], tmp_sp[j]) > eps:
                                 miss_flag = True
                                 break
                         if not miss_flag:
@@ -95,7 +97,7 @@ class MatchingAlgorithm:
         return num
 
     @staticmethod
-    def _recalc_indexes(poly, index) -> []:
+    def _recalc_indexes(poly, index) -> list:
         new_poly = []
         for i in range(index, len(poly)):
             new_poly.append(poly[i])
@@ -104,7 +106,7 @@ class MatchingAlgorithm:
         return new_poly
 
     @staticmethod
-    def _resize_by_point(poly, index, coeff) -> []:
+    def _resize_by_point(poly, index, coeff) -> list:
         resized_poly = []
         for i in range(len(poly)):
             if i == index:
@@ -119,7 +121,7 @@ class MatchingAlgorithm:
         return resized_poly
 
     @staticmethod
-    def _rotate(origin, point, angle) -> []:
+    def _rotate(origin, point, angle) -> list:
         ox, oy = origin
         px, py = point
 
@@ -135,7 +137,7 @@ class MatchingAlgorithm:
         return math.acos(sc / ma / mb)
 
     @staticmethod
-    def _rotate_by_angle(poly, index, angle) -> []:
+    def _rotate_by_angle(poly, index, angle) -> list:
         rotated_poly = []
         for i in range(len(poly)):
             if i == index:
