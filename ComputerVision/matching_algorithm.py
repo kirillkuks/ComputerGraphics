@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 
 class MatchingAlgorithm:
@@ -9,62 +10,64 @@ class MatchingAlgorithm:
         if len(origin_poly) != len(searched_poly):
             return False, 0, 0, 0, 0
 
-        for poly in [searched_poly, list(reversed(searched_poly))]:
+        for sp in [searched_poly, list(reversed(searched_poly))]:
 
-            eps, f_longest_sides = self._find_longest_sides(origin_poly)
-            _, s_longest_sides = self._find_longest_sides(poly)
+            eps, sp_longest_sides = self._find_longest_sides(sp)
+            _, op_longest_sides = self._find_longest_sides(origin_poly)
 
-            if len(f_longest_sides) != len(s_longest_sides):
-                return False, 0.0, 0, 0, 0
+            if len(sp_longest_sides) != len(op_longest_sides):
+                return False, 0, 0, 0, 0
 
-            for f_longest_side in f_longest_sides:
-                for s_longest_side in s_longest_sides:
-                    coeff = self._dist(origin_poly[f_longest_side[0]], origin_poly[f_longest_side[1]]) / \
-                            self._dist(poly[s_longest_side[0]], poly[s_longest_side[1]])
+            for sp_longest_side in sp_longest_sides:
+                for op_longest_side in op_longest_sides:
+                    coeff = self._dist(sp[sp_longest_side[0]], sp[sp_longest_side[1]]) / \
+                            self._dist(origin_poly[op_longest_side[0]], origin_poly[op_longest_side[1]])
 
-                    if s_longest_side[0] != f_longest_side[0]:
-                        shift = s_longest_side[0] - f_longest_side[0]
+                    if sp_longest_side[0] != op_longest_side[0]:
+                        shift = sp_longest_side[0] - op_longest_side[0]
                         if shift < 0:
-                            shift = len(origin_poly) + shift
-                        elif shift >= len(origin_poly):
-                            shift = shift - len(origin_poly)
-                        temp_poly = self._recalc_indexes(poly, shift)
+                            shift = len(sp) + shift
+                        elif shift >= len(sp):
+                            shift = shift - len(sp)
+                        tmp_sp = self._recalc_indexes(sp, shift)
                     else:
-                        temp_poly = poly
+                        tmp_sp = sp
 
-                    index = f_longest_side[0]
+                    index = op_longest_side[0]
 
-                    answer_dist = [x - y for x, y in zip(origin_poly[0], temp_poly[0])]
-                    dist = [x - y for x, y in zip(origin_poly[index], temp_poly[index])]
+                    tmp_op = origin_poly
 
-                    temp_poly = list(map(lambda point: [point[0] + dist[0], point[1] + dist[1]], temp_poly))
+                    answer_dist = [x - y for x, y in zip(tmp_sp[0], tmp_op[0])]
+                    dist = [x - y for x, y in zip(tmp_sp[index], tmp_op[index])]
 
-                    temp_poly = self._resize_by_point(temp_poly, index, coeff)
+                    tmp_op = list(map(lambda point: [point[0] + dist[0], point[1] + dist[1]], tmp_op))
 
-                    f_vector = [x - y for x, y in zip(origin_poly[f_longest_side[1]], origin_poly[index])]
-                    s_vector = [x - y for x, y in zip(temp_poly[f_longest_side[1]], temp_poly[index])]
+                    tmp_op = self._resize_by_point(tmp_op, index, coeff)
+
+                    f_vector = [x - y for x, y in zip(tmp_sp[op_longest_side[1]], tmp_sp[index])]
+                    s_vector = [x - y for x, y in zip(tmp_op[op_longest_side[1]], tmp_op[index])]
 
                     angle = self._find_angle(s_vector, f_vector)
 
-                    temp_poly1 = self._rotate_by_angle(temp_poly, index, angle)
-                    temp_poly2 = self._rotate_by_angle(temp_poly, index, -angle)
+                    tmp_op_poly1 = self._rotate_by_angle(tmp_op, index, angle)
+                    tmp_op_poly2 = self._rotate_by_angle(tmp_op, index, -angle)
 
-                    for t_poly, t_angle in zip([temp_poly1, temp_poly2], [angle, -angle]):
+                    for poly, t_angle in zip([tmp_op_poly1, tmp_op_poly2], [angle, -angle]):
                         miss_flag = False
 
-                        for j in range(len(t_poly)):
-                            if self._dist(t_poly[j], origin_poly[j]) > eps:
+                        for j in range(len(poly)):
+                            if self._dist(poly[j], tmp_sp[j]) > eps:
                                 miss_flag = True
                                 break
                         if not miss_flag:
                             return True, self._int_r(answer_dist[0]), self._int_r(answer_dist[1]), self._int_r(coeff), \
-                                   self._int_r(math.degrees(t_angle))
+                                   self._int_r(np.degrees(t_angle))
 
         return False, 0, 0, 0, 0
 
     def _find_longest_sides(self, poly):
         max_dist = 0.0
-        eps = -math.inf
+        eps = -np.inf
         indexes = []
         for i in range(len(poly)):
             if i == len(poly) - 1:
@@ -87,7 +90,7 @@ class MatchingAlgorithm:
 
     @staticmethod
     def _dist(f_point, s_point) -> float:
-        return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(f_point, s_point)))
+        return np.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(f_point, s_point)))
 
     @staticmethod
     def _int_r(num):
@@ -123,16 +126,24 @@ class MatchingAlgorithm:
         ox, oy = origin
         px, py = point
 
-        qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
-        qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+        qx = ox + np.cos(angle) * (px - ox) - np.sin(angle) * (py - oy)
+        qy = oy + np.sin(angle) * (px - ox) + np.cos(angle) * (py - oy)
         return [qx, qy]
 
     @staticmethod
     def _find_angle(f_vector, s_vector) -> float:
-        ma = math.sqrt(f_vector[0] ** 2 + f_vector[1] ** 2)
-        mb = math.sqrt(s_vector[0] ** 2 + s_vector[1] ** 2)
+        ma = np.sqrt(f_vector[0] ** 2 + f_vector[1] ** 2)
+        mb = np.sqrt(s_vector[0] ** 2 + s_vector[1] ** 2)
         sc = f_vector[0] * s_vector[0] + f_vector[1] * s_vector[1]
-        return math.acos(sc / ma / mb)
+
+        res = sc / (ma * mb)
+
+        if res < -1:
+            return np.pi
+        elif res > 1:
+            return 0
+        else:
+            return np.arccos(res)
 
     @staticmethod
     def _rotate_by_angle(poly, index, angle) -> list:
