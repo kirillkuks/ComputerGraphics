@@ -15,6 +15,8 @@ from figure import Figure
 from matching_algorithm import MatchingAlgorithm
 from input_reader import InputReader
 
+import math
+
 
 class ShapeFinder:
     def __init__(self) -> None:
@@ -28,10 +30,6 @@ class ShapeFinder:
         figures = []
 
         for closed, coords in self.get_all_components(closed):
-            is_need, edged = self.need_canny(closed)
-
-            closed = edged if is_need else closed
-
             h, theta, d = hough_line(closed)
 
             lines = []
@@ -212,7 +210,7 @@ class ShapeFinder:
         return labels == (areas[ind][0] + 1), areas[ind][2]
 
     def need_canny(self, image: np.ndarray) -> bool:
-        edged_image = canny(image, sigma=1.5, low_threshold=0.1)
+        edged_image = canny(image)
 
         return np.sum(edged_image) < np.sum(image), edged_image
 

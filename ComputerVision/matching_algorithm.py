@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 
 class MatchingAlgorithm:
@@ -8,7 +9,7 @@ class MatchingAlgorithm:
     def match(self, origin_poly, searched_poly):
         if len(origin_poly) != len(searched_poly):
             return False, 0, 0, 0, 0
-          
+
         for sp in [searched_poly, list(reversed(searched_poly))]:
 
             eps, sp_longest_sides = self._find_longest_sides(sp)
@@ -60,13 +61,13 @@ class MatchingAlgorithm:
                                 break
                         if not miss_flag:
                             return True, self._int_r(answer_dist[0]), self._int_r(answer_dist[1]), self._int_r(coeff), \
-                                   self._int_r(math.degrees(t_angle))
+                                   self._int_r(np.degrees(t_angle))
 
         return False, 0, 0, 0, 0
 
     def _find_longest_sides(self, poly):
         max_dist = 0.0
-        eps = -math.inf
+        eps = -np.inf
         indexes = []
         for i in range(len(poly)):
             if i == len(poly) - 1:
@@ -89,7 +90,7 @@ class MatchingAlgorithm:
 
     @staticmethod
     def _dist(f_point, s_point) -> float:
-        return math.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(f_point, s_point)))
+        return np.sqrt(sum((px - qx) ** 2.0 for px, qx in zip(f_point, s_point)))
 
     @staticmethod
     def _int_r(num):
@@ -125,16 +126,24 @@ class MatchingAlgorithm:
         ox, oy = origin
         px, py = point
 
-        qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
-        qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+        qx = ox + np.cos(angle) * (px - ox) - np.sin(angle) * (py - oy)
+        qy = oy + np.sin(angle) * (px - ox) + np.cos(angle) * (py - oy)
         return [qx, qy]
 
     @staticmethod
     def _find_angle(f_vector, s_vector) -> float:
-        ma = math.sqrt(f_vector[0] ** 2 + f_vector[1] ** 2)
-        mb = math.sqrt(s_vector[0] ** 2 + s_vector[1] ** 2)
+        ma = np.sqrt(f_vector[0] ** 2 + f_vector[1] ** 2)
+        mb = np.sqrt(s_vector[0] ** 2 + s_vector[1] ** 2)
         sc = f_vector[0] * s_vector[0] + f_vector[1] * s_vector[1]
-        return math.acos(sc / ma / mb)
+
+        res = sc / (ma * mb)
+
+        if res < -1:
+            return np.pi
+        elif res > 1:
+            return 0
+        else:
+            return np.arccos(res)
 
     @staticmethod
     def _rotate_by_angle(poly, index, angle) -> list:
