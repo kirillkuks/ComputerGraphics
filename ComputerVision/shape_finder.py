@@ -30,10 +30,6 @@ class ShapeFinder:
         figures = []
 
         for closed, coords in self.get_all_components(closed):
-            is_need, edged = self.need_canny(closed)
-
-            closed = edged if is_need else closed
-
             h, theta, d = hough_line(closed)
 
             lines = []
